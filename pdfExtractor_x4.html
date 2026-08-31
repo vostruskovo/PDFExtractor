@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>PDF Reader Pro - Organizador de Agendamentos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: #0a1620;
+            min-height: 100vh;
+            padding: 20px;
+            color: #e8edf2;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            background: linear-gradient(135deg, #0f5c6e, #0a4654);
+            padding: 28px 24px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 24px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        h1 { font-size: 2rem; color: white; }
+        .subtitle { color: rgba(255,255,255,0.8); margin-top: 6px; font-size: 0.9rem; }
+        .card {
+            background: #1a2530;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .card h2 {
+            color: #4fc3f7;
+            margin-bottom: 16px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .drop-zone {
+            border: 3px dashed #2a9d8f;
+            border-radius: 16px;
+            padding: 50px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(42, 157, 143, 0.05);
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.08);
+            transform: scale(1.01);
+        }
+        .drop-zone .icon { font-size: 4rem; display: block; margin-bottom: 12px; }
+        .drop-zone p { color: #a8b6c4; font-size: 1rem; }
+        .drop-zone .hint { font-size: 0.8rem; color: #667; margin-top: 8px; }
+        .file-list {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .file-tag {
+            background: #0f5c6e;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .file-tag .remove {
+            cursor: pointer;
+            color: #e76f51;
+            font-weight: bold;
+        }
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+        }
+        .btn-primary {
+            background: #0f5c6e;
+            color: white;
+        }
+        .btn-primary:hover { background: #0a4654; transform: translateY(-2px); }
+        .btn-success {
+            background: #2a9d8f;
+            color: white;
+        }
+        .btn-success:hover { background: #1f7a6f; transform: translateY(-2px); }
+        .btn-danger {
+            background: #e76f51;
+            color: white;
+        }
+        .btn-danger:hover { background: #c95a3e; transform: translateY(-2px); }
+        .btn-purple {
+            background: #5b21b6;
+            color: white;
+        }
+        .btn-purple:hover { background: #4c1d95; transform: translateY(-2px); }
+        .btn-copy {
+            background: #e9c46a;
+            color: #1a2530;
+        }
+        .btn-copy:hover { background: #d4a850; transform: translateY(-2px); }
+        .btn-download {
+            background: #4fc3f7;
+            color: #0a1620;
+        }
+        .btn-download:hover { background: #38b0e0; transform: translateY(-2px); }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+        .progress-container {
+            margin-top: 16px;
+            display: none;
+        }
+        .progress-container.active { display: block; }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #24303d;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2a9d8f, #4fc3f7);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .progress-text { font-size: 0.85rem; color: #a8b6c4; }
+        .progress-filename { font-size: 0.75rem; color: #667; margin-top: 4px; word-break: break-all; }
+        
+        /* ===== SEARCH ===== */
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .search-container input {
+            flex: 1;
+            min-width: 200px;
+            background: #24303d;
+            color: #e8edf2;
+            border: 1px solid #33414f;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+        }
+        .search-container input:focus {
+            border-color: #4fc3f7;
+            outline: none;
+        }
+        .search-container input::placeholder {
+            color: #667;
+        }
+        .search-container .clear-search {
+            background: #e76f51;
+            border: none;
+            color: white;
+            padding: 0 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            min-height: 44px;
+        }
+        .search-container .clear-search:hover { background: #c95a3e; }
+        .search-info {
+            color: #a8b6c4;
+            font-size: 0.85rem;
+            padding: 8px 12px;
+            background: #24303d;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .search-info strong { color: white; }
+        .search-info .highlight { color: #e9c46a; }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .result-card {
+            background: #24303d;
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 4px solid #2a9d8f;
+            transition: all 0.2s;
+        }
+        .result-card:hover {
+            background: #2a3a48;
+            transform: translateX(4px);
+        }
+        .result-card .patient { font-weight: 700; font-size: 1.1rem; color: white; }
+        .result-card .detail { font-size: 0.85rem; color: #a8b6c4; margin-top: 4px; }
+        .result-card .detail span { color: #4fc3f7; }
+        .result-card .date-badge {
+            display: inline-block;
+            background: #0f5c6e;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-top: 6px;
+        }
+        .result-card .match-highlight {
+            background: #e9c46a40;
+            padding: 0 4px;
+            border-radius: 4px;
+            color: #e9c46a;
+        }
+        .result-card .copy-card-btn {
+            background: transparent;
+            border: 1px solid #33414f;
+            color: #a8b6c4;
+            padding: 4px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            margin-top: 6px;
+            transition: all 0.2s;
+        }
+        .result-card .copy-card-btn:hover {
+            border-color: #4fc3f7;
+            color: white;
+            background: #0f5c6e40;
+        }
+        .result-card .copy-card-btn.copied {
+            border-color: #2a9d8f;
+            color: #2a9d8f;
+        }
+        .result-card .card-position {
+            display: inline-block;
+            background: #0f5c6e40;
+            padding: 1px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            color: #4fc3f7;
+            margin-top: 4px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .stat-box {
+            background: #24303d;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-box .number { font-size: 2rem; font-weight: 800; color: #4fc3f7; }
+        .stat-box .label { font-size: 0.75rem; color: #a8b6c4; }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #667;
+        }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+        .settings-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 12px 0;
+        }
+        .settings-row label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #a8b6c4;
+        }
+        .settings-row select, .settings-row input {
+            background: #24303d;
+            color: #e8edf2;
+            border: 1px solid #33414f;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .settings-row select:focus, .settings-row input:focus {
+            border-color: #4fc3f7;
+            outline: none;
+        }
+        .settings-row .layout-preview {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            background: #24303d;
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid #33414f;
+        }
+        .settings-row .layout-preview .cell {
+            width: 20px;
+            height: 20px;
+            background: #0f5c6e;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.5rem;
+            color: white;
+            font-weight: 700;
+        }
+        .settings-row .layout-preview .cell.empty {
+            background: #33414f;
+            opacity: 0.3;
+        }
+        .settings-row .layout-preview .cell.active {
+            background: #4fc3f7;
+            color: #0a1620;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            background: #1a2530;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+        .toast.error { border-left: 4px solid #e76f51; }
+        .toast.success { border-left: 4px solid #2a9d8f; }
+        .toast.warning { border-left: 4px solid #e9c46a; }
+        .toast.info { border-left: 4px solid #4fc3f7; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #1a2530;
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 650px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-content h2 { color: #4fc3f7; margin-bottom: 16px; }
+        .modal-content .close {
+            float: right;
+            background: none;
+            border: none;
+            color: #a8b6c4;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-content .close:hover { color: white; }
+        .preview-text {
+            background: #0d1620;
+            padding: 16px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            color: #a8b6c4;
+            border: 1px solid #24303d;
+            line-height: 1.6;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-success { background: #2a9d8f40; color: #2a9d8f; }
+        .badge-warning { background: #e9c46a40; color: #e9c46a; }
+        @media (max-width: 600px) {
+            body { padding: 12px; }
+            h1 { font-size: 1.4rem; }
+            .card { padding: 16px; }
+            .drop-zone { padding: 30px 16px; }
+            .results-grid { grid-template-columns: 1fr; }
+            .search-container input { min-width: 120px; }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1a2530; }
+        ::-webkit-scrollbar-thumb { background: #0f5c6e; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #0a4654; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>📄 PDF Reader Pro</h1>
+        <p class="subtitle">Extraia, organize e exporte agendamentos médicos de múltiplos PDFs com OCR inteligente</p>
+    </header>
+
+    <div class="card">
+        <h2>📎 Arquivos PDF</h2>
+        <div class="drop-zone" id="dropZone">
+            <span class="icon">📂</span>
+            <p><strong>Clique ou arraste</strong> seus arquivos PDF aqui</p>
+            <p class="hint">Suporta múltiplos arquivos • OCR integrado • Reconhecimento de texto</p>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf" multiple style="display:none;">
+        <div class="file-list" id="fileList"></div>
+        
+        <div class="settings-row">
+            <label>
+                📐 Cartões por página:
+                <select id="layoutSelect">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="4" selected>4</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                </select>
+            </label>
+            <label>
+                🔍 Precisão OCR:
+                <select id="ocrQuality">
+                    <option value="fast">Rápida (recomendado)</option>
+                    <option value="accurate">Alta (mais lento)</option>
+                </select>
+            </label>
+            <div class="layout-preview" id="layoutPreview">
+                <span style="font-size:0.7rem;color:#667;margin-right:4px;">Layout:</span>
+                <span class="cell active">1</span>
+                <span class="cell active">2</span>
+                <span class="cell empty">3</span>
+                <span class="cell empty">4</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" id="processBtn" disabled>🔍 Processar PDFs</button>
+            <button class="btn btn-download" id="downloadBtn" disabled>📥 Baixar TXT</button>
+            <button class="btn btn-copy" id="copyAllBtn" disabled>📋 Copiar Tudo</button>
+            <button class="btn btn-purple" id="previewBtn" disabled>👁️ Pré-visualizar</button>
+            <button class="btn btn-danger" id="clearBtn">🗑️ Limpar Tudo</button>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-text" id="progressText">📄 Processando...</div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-filename" id="progressFilename"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📊 Estatísticas</h2>
+        <div class="stats">
+            <div class="stat-box"><div class="number" id="statFiles">0</div><div class="label">Arquivos</div></div>
+            <div class="stat-box"><div class="number" id="statCards">0</div><div class="label">Cartões Extraídos</div></div>
+            <div class="stat-box"><div class="number" id="statPatients">0</div><div class="label">Pacientes</div></div>
+            <div class="stat-box"><div class="number" id="statDates">0</div><div class="label">Datas Diferentes</div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>
+            📋 Resultados Extraídos
+            <span style="font-size:0.7rem; color:#667; font-weight:normal; margin-left:auto;">
+                <span id="resultCount">0</span> resultados
+            </span>
+        </h2>
+        
+        <!-- SEARCH -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="🔎 Buscar por nome, data, especialidade ou hospital...">
+            <button class="clear-search" id="clearSearchBtn">✕</button>
+        </div>
+        <div class="search-info" id="searchInfo">
+            🔍 <strong id="searchResultCount">0</strong> resultado(s) para "<span class="highlight" id="searchQueryDisplay"></span>"
+        </div>
+        
+        <div id="resultsContainer">
+            <div class="empty-state">
+                <div class="icon">📭</div>
+                <p>Nenhum dado extraído ainda.<br>Carregue alguns PDFs e clique em "Processar".</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="previewModal">
+    <div class="modal-content">
+        <button class="close" id="modalClose">&times;</button>
+        <h2>📝 Pré-visualização do TXT</h2>
+        <div class="preview-text" id="previewText"></div>
+        <div class="actions" style="margin-top:16px;">
+            <button class="btn btn-download" id="modalDownloadBtn">📥 Baixar TXT</button>
+            <button class="btn btn-copy" id="modalCopyBtn">📋 Copiar Texto</button>
+            <button class="btn btn-danger" id="modalCloseBtn">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+// ============================================================
+// PDF READER PRO - Complete OCR & Organization System
+// ============================================================
+
+// ==================== STATE ====================
+let state = {
+    files: [],
+    extractedCards: [],
+    filteredCards: [],
+    processedCount: 0,
+    isProcessing: false,
+    searchQuery: '',
+    layoutCount: 4
+};
+
+// ==================== DOM REFS ====================
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const processBtn = document.getElementById('processBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const previewBtn = document.getElementById('previewBtn');
+const copyAllBtn = document.getElementById('copyAllBtn');
+const clearBtn = document.getElementById('clearBtn');
+const progressContainer = document.getElementById('progressContainer');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const progressFilename = document.getElementById('progressFilename');
+const resultsContainer = document.getElementById('resultsContainer');
+const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearchBtn');
+const searchInfo = document.getElementById('searchInfo');
+const searchResultCount = document.getElementById('searchResultCount');
+const searchQueryDisplay = document.getElementById('searchQueryDisplay');
+const resultCount = document.getElementById('resultCount');
+const statFiles = document.getElementById('statFiles');
+const statCards = document.getElementById('statCards');
+const statPatients = document.getElementById('statPatients');
+const statDates = document.getElementById('statDates');
+const previewModal = document.getElementById('previewModal');
+const previewText = document.getElementById('previewText');
+const modalClose = document.getElementById('modalClose');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
+const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+const modalCopyBtn = document.getElementById('modalCopyBtn');
+const layoutSelect = document.getElementById('layoutSelect');
+const layoutPreview = document.getElementById('layoutPreview');
+const ocrQuality = document.getElementById('ocrQuality');
+
+// ==================== LAYOUT PREVIEW ====================
+function updateLayoutPreview(count) {
+    state.layoutCount = count;
+    const label = layoutPreview.querySelector('span:first-child');
+    layoutPreview.innerHTML = '';
+    layoutPreview.appendChild(label);
+    
+    const totalCells = count;
+    for (let i = 0; i < 8; i++) {
+        const cell = document.createElement('span');
+        cell.className = 'cell';
+        if (i < totalCells) {
+            cell.classList.add('active');
+            cell.textContent = i + 1;
+        } else {
+            cell.classList.add('empty');
+            cell.textContent = '·';
+        }
+        layoutPreview.appendChild(cell);
+    }
+}
+
+layoutSelect.addEventListener('change', function() {
+    updateLayoutPreview(parseInt(this.value));
+});
+updateLayoutPreview(4);
+
+// ==================== TOAST SYSTEM ====================
+function showToast(msg, type = 'success') {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.className = `toast ${type}`;
+    div.textContent = msg;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 4000);
+}
+
+// ==================== FILE HANDLING ====================
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) addFiles(e.target.files);
+    fileInput.value = '';
+});
+
+function addFiles(fileList) {
+    for (const file of fileList) {
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+            if (!state.files.find(f => f.name === file.name && f.size === file.size)) {
+                state.files.push(file);
+            }
+        }
+    }
+    renderFileList();
+    updateButtons();
+    updateStats();
+    showToast(`📎 ${state.files.length} arquivo(s) carregado(s)`);
+}
+
+function removeFile(index) {
+    state.files.splice(index, 1);
+    renderFileList();
+    updateButtons();
+    updateStats();
+}
+
+function renderFileList() {
+    if (!state.files.length) {
+        fileList.innerHTML = '';
+        return;
+    }
+    fileList.innerHTML = state.files.map((f, i) => `
+        <div class="file-tag">
+            📄 ${f.name} (${(f.size/1024).toFixed(0)}KB)
+            <span class="remove" data-index="${i}">✕</span>
+        </div>
+    `).join('');
+    fileList.querySelectorAll('.remove').forEach(el => {
+        el.onclick = () => removeFile(parseInt(el.dataset.index));
+    });
+}
+
+function updateButtons() {
+    processBtn.disabled = state.files.length === 0 || state.isProcessing;
+    const hasResults = state.extractedCards.length > 0;
+    downloadBtn.disabled = !hasResults;
+    previewBtn.disabled = !hasResults;
+    copyAllBtn.disabled = !hasResults;
+}
+
+function updateStats() {
+    statFiles.textContent = state.files.length;
+    const displayCards = state.filteredCards.length > 0 ? state.filteredCards : state.extractedCards;
+    statCards.textContent = displayCards.length;
+    resultCount.textContent = displayCards.length;
+    const patients = new Set(displayCards.map(c => c.pacient).filter(Boolean));
+    statPatients.textContent = patients.size;
+    const dates = new Set(displayCards.map(c => c.date).filter(Boolean));
+    statDates.textContent = dates.size;
+}
+
+// ==================== OCR ENGINE ====================
+function stripAccents(s) {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function cleanValue(v) {
+    return v.replace(/^[\s:\-–—|_.]+/, '').replace(/[\s_]+$/, '').trim();
+}
+
+function parseOcrText(rawText) {
+    const text = rawText.replace(/\r/g, '');
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+    function grabAfterLabel(label) {
+        const normLabel = stripAccents(label.toLowerCase());
+        for (let i = 0; i < lines.length; i++) {
+            const normLine = stripAccents(lines[i].toLowerCase());
+            const idx = normLine.indexOf(normLabel);
+            if (idx !== -1) {
+                const rest = cleanValue(lines[i].slice(idx + label.length));
+                if (rest) return rest;
+                if (lines[i + 1]) return cleanValue(lines[i + 1]);
+            }
+        }
+        return '';
+    }
+
+    const pacient = grabAfterLabel('Paciente');
+    const speciality = grabAfterLabel('Especialidade');
+    let date = grabAfterLabel('Data');
+    let hour = grabAfterLabel('Horário') || grabAfterLabel('Horario');
+    const hospitalAddress = grabAfterLabel('Local');
+
+    const dateMatch = date.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
+    date = dateMatch ? `${dateMatch[1].padStart(2,'0')}/${dateMatch[2].padStart(2,'0')}/${dateMatch[3].length===2?'20'+dateMatch[3]:dateMatch[3]}` : '';
+    
+    const hourMatch = hour.match(/(\d{1,2}):(\d{2})/);
+    hour = hourMatch ? `${hourMatch[1].padStart(2,'0')}:${hourMatch[2]}` : '';
+
+    let hospitalName = '';
+    for (const line of lines) {
+        if (/agendamento|consulta|médico/i.test(line)) break;
+        const cleanedLine = cleanValue(line);
+        if (cleanedLine.length >= 3 && !/^_+$/.test(cleanedLine)) {
+            hospitalName = cleanedLine;
+            break;
+        }
+    }
+
+    return {
+        pacient: pacient && !/^_+$/.test(pacient) ? capitalize(pacient) : '',
+        speciality: speciality && !/^_+$/.test(speciality) ? speciality : '',
+        date,
+        hour,
+        hospitalName: hospitalName && hospitalName.length < 60 ? hospitalName : '',
+        hospitalAddress: hospitalAddress && !/^_+$/.test(hospitalAddress) ? hospitalAddress : ''
+    };
+}
+
+function capitalize(s) {
+    if (!s) return '';
+    return s.split(' ').map(w => w[0]?.toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+}
+
+function preprocessCanvas(canvas) {
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = imgData.data;
+    let min = 255, max = 0;
+    const gray = new Uint8ClampedArray(d.length / 4);
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        gray[j] = g;
+        if (g < min) min = g;
+        if (g > max) max = g;
+    }
+    const range = Math.max(max - min, 1);
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        const stretched = ((gray[j] - min) / range) * 255;
+        d[i] = d[i + 1] = d[i + 2] = stretched;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+}
+
+function gridDims(n) {
+    if (n === 1) return { cols: 1, rows: 1 };
+    if (n === 2) return { cols: 1, rows: 2 };
+    if (n === 4) return { cols: 2, rows: 2 };
+    if (n === 6) return { cols: 2, rows: 3 };
+    if (n === 8) return { cols: 2, rows: 4 };
+    return { cols: 2, rows: 2 };
+}
+
+function describeError(e) {
+    if (!e) return 'motivo desconhecido';
+    if (typeof e === 'string') return e;
+    if (e.message) return e.message;
+    if (e.error?.message) return e.error.message;
+    try { return JSON.stringify(e); } catch (_) { return String(e); }
+}
+
+// ==================== CORE PROCESSING ====================
+async function processPdfs() {
+    if (state.isProcessing || !state.files.length) return;
+    
+    state.isProcessing = true;
+    state.extractedCards = [];
+    state.filteredCards = [];
+    processBtn.disabled = true;
+    progressContainer.classList.add('active');
+    
+    const layoutCount = parseInt(layoutSelect.value);
+    const quality = ocrQuality.value;
+    const scale = quality === 'accurate' ? 4 : 3;
+    
+    try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        if (typeof Tesseract === 'undefined') {
+            throw new Error('Tesseract.js não carregou. Verifique sua conexão com a internet.');
+        }
+        
+        let worker;
+        try {
+            worker = await Tesseract.createWorker('por', 1, {
+                workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js',
+                corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5',
+                langPath: 'https://tessdata.projectnaptha.com/4.0.0'
+            });
+        } catch (workerErr) {
+            throw new Error('Erro ao iniciar OCR: ' + describeError(workerErr));
+        }
+        
+        try {
+            await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK });
+        } catch (_) { /* ignore */ }
+        
+        let totalCards = 0;
+        const allCards = [];
+        
+        for (let fileIdx = 0; fileIdx < state.files.length; fileIdx++) {
+            const file = state.files[fileIdx];
+            const total = state.files.length;
+            
+            progressText.textContent = `📄 Processando ${fileIdx + 1} de ${total}: ${file.name}`;
+            progressFilename.textContent = file.name;
+            progressFill.style.width = `${(fileIdx / total) * 100}%`;
+            
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+            const numPages = pdf.numPages;
+            
+            for (let pageNum = 1; pageNum <= Math.min(numPages, 1); pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: scale });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                
+                const { cols, rows } = gridDims(layoutCount);
+                const cellW = canvas.width / cols;
+                const cellH = canvas.height / rows;
+                
+                for (let i = 0; i < layoutCount; i++) {
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    const cellCanvas = document.createElement('canvas');
+                    cellCanvas.width = Math.floor(cellW);
+                    cellCanvas.height = Math.floor(cellH);
+                    const ctx = cellCanvas.getContext('2d');
+                    ctx.drawImage(canvas, col * cellW, row * cellH, cellW, cellH, 0, 0, cellW, cellH);
+                    preprocessCanvas(cellCanvas);
+                    
+                    let text = '';
+                    try {
+                        const { data } = await worker.recognize(cellCanvas);
+                        text = data?.text || '';
+                    } catch (ocrErr) {
+                        console.warn('OCR error on card', i, ':', ocrErr);
+                    }
+                    
+                    const parsed = parseOcrText(text);
+                    parsed._source = file.name;
+                    parsed._page = pageNum;
+                    parsed._cardIndex = i + 1;
+                    parsed._totalCards = layoutCount;
+                    allCards.push(parsed);
+                    totalCards++;
+                }
+            }
+            
+            const percent = ((fileIdx + 1) / total) * 100;
+            progressFill.style.width = `${percent}%`;
+            progressText.textContent = `📄 ${fileIdx + 1} de ${total} PDFs • ${totalCards} cartões extraídos (${layoutCount} por página)`;
+        }
+        
+        await worker.terminate();
+        worker = null;
+        
+        const cardsWithData = allCards.filter(c => c.pacient || c.date || c.speciality || c.hour || c.hospitalName);
+        const emptyCards = allCards.filter(c => !c.pacient && !c.date && !c.speciality && !c.hour && !c.hospitalName);
+        
+        cardsWithData.sort((a, b) => {
+            const dateA = parseDate(a.date);
+            const dateB = parseDate(b.date);
+            if (dateA !== dateB) return dateA - dateB;
+            return (a.hour || '00:00').localeCompare(b.hour || '00:00');
+        });
+        
+        state.extractedCards = [...cardsWithData, ...emptyCards];
+        state.filteredCards = [...state.extractedCards];
+        
+        progressFill.style.width = '100%';
+        progressText.textContent = `✅ ${state.files.length} PDF(s) • ${state.extractedCards.filter(c => c.pacient || c.date).length} cartões com dados • ${layoutCount} por página`;
+        
+        renderResults();
+        updateStats();
+        updateButtons();
+        showToast(`✅ ${state.extractedCards.filter(c => c.pacient || c.date).length} cartões extraídos (${layoutCount} por página)!`, 'success');
+        
+    } catch (e) {
+        console.error('Processing error:', e);
+        showToast('❌ Erro: ' + describeError(e), 'error');
+    } finally {
+        state.isProcessing = false;
+        processBtn.disabled = false;
+        setTimeout(() => {
+            progressContainer.classList.remove('active');
+        }, 3000);
+    }
+}
+
+// ==================== SEARCH ====================
+function applySearch() {
+    const query = searchInput.value.trim().toLowerCase();
+    state.searchQuery = query;
+    
+    if (!query) {
+        state.filteredCards = [...state.extractedCards];
+        searchInfo.style.display = 'none';
+    } else {
+        state.filteredCards = state.extractedCards.filter(c => {
+            const patientMatch = (c.pacient || '').toLowerCase().includes(query);
+            const dateMatch = (c.date || '').includes(query);
+            const specialtyMatch = (c.speciality || '').toLowerCase().includes(query);
+            const hospitalMatch = (c.hospitalName || '').toLowerCase().includes(query);
+            const addressMatch = (c.hospitalAddress || '').toLowerCase().includes(query);
+            const sourceMatch = (c._source || '').toLowerCase().includes(query);
+            return patientMatch || dateMatch || specialtyMatch || hospitalMatch || addressMatch || sourceMatch;
+        });
+        
+        searchInfo.style.display = 'block';
+        searchResultCount.textContent = state.filteredCards.length;
+        searchQueryDisplay.textContent = query;
+    }
+    
+    renderResults();
+    updateStats();
+}
+
+function highlightText(text, query) {
+    if (!query || !text) return text;
+    const idx = text.toLowerCase().indexOf(query);
+    if (idx === -1) return text;
+    const before = text.substring(0, idx);
+    const match = text.substring(idx, idx + query.length);
+    const after = text.substring(idx + query.length);
+    return `${before}<span class="match-highlight">${match}</span>${after}`;
+}
+
+// ==================== RENDER RESULTS ====================
+function renderResults() {
+    const cards = state.filteredCards.length > 0 ? state.filteredCards : state.extractedCards;
+    
+    if (!cards.length) {
+        resultsContainer.innerHTML = `
+            <div class="empty-state">
+                <div class="icon">${state.searchQuery ? '🔍' : '📭'}</div>
+                <p>${state.searchQuery ? `Nenhum resultado para "<strong>${escapeHtml(state.searchQuery)}</strong>"` : 'Nenhum dado extraído ainda.<br>Carregue alguns PDFs e clique em "Processar".'}</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const query = state.searchQuery;
+    const displayCards = cards.slice(0, 100);
+    const remaining = cards.length - 100;
+    
+    resultsContainer.innerHTML = displayCards.map((c, i) => {
+        const hasData = c.pacient || c.date || c.speciality || c.hour || c.hospitalName;
+        const patient = query ? highlightText(c.pacient || '_________________', query) : (c.pacient || '_________________');
+        const specialty = query ? highlightText(c.speciality || '_________________', query) : (c.speciality || '_________________');
+        const hospital = query ? highlightText(c.hospitalName || '', query) : (c.hospitalName || '');
+        const address = query ? highlightText(c.hospitalAddress || '', query) : (c.hospitalAddress || '');
+        const dateDisplay = c.date || '__/__/____';
+        const hourDisplay = c.hour || '__:__';
+        const source = c._source || 'PDF';
+        const cardPos = c._cardIndex || '?';
+        const totalCards = c._totalCards || 4;
+        
+        return `
+            <div class="result-card" data-index="${i}" style="${!hasData ? 'opacity:0.4; border-left-color: #445566;' : ''}">
+                <div class="patient">${patient}</div>
+                <div class="detail">🕐 <span>${hourDisplay}</span> • 🔬 <span>${specialty}</span></div>
+                <div class="detail">📅 <span>${dateDisplay}</span></div>
+                ${hospital ? `<div class="detail">🏥 <span>${hospital}</span></div>` : ''}
+                ${address && address !== hospital ? `<div class="detail">📍 <span>${address}</span></div>` : ''}
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; flex-wrap:wrap; gap:4px;">
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <div class="date-badge">📄 ${source}</div>
+                        <span class="card-position">#${cardPos} de ${totalCards}</span>
+                        ${!hasData ? '<span class="card-position" style="background:#e76f5140;color:#e76f51;">⚠️ Vazio</span>' : ''}
+                    </div>
+                    ${hasData ? `<button class="copy-card-btn" data-patient="${escapeHtml(c.pacient || '')}" data-date="${escapeHtml(c.date || '')}" data-hour="${escapeHtml(c.hour || '')}" data-specialty="${escapeHtml(c.speciality || '')}" data-hospital="${escapeHtml(c.hospitalName || '')}" data-address="${escapeHtml(c.hospitalAddress || '')}">📋 Copiar</button>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    if (remaining > 0) {
+        resultsContainer.innerHTML += `
+            <div style="text-align:center;padding:20px;color:#667;grid-column:1/-1;">
+                + ${remaining} mais cartões. Use a busca para filtrar ou exporte o TXT para ver todos.
+            </div>
+        `;
+    }
+    
+    document.querySelectorAll('.copy-card-btn').forEach(btn => {
+        btn.onclick = function(e) {
+            e.stopPropagation();
+            const patient = this.dataset.patient || '_________________';
+            const date = this.dataset.date || '__/__/____';
+            const hour = this.dataset.hour || '__:__';
+            const specialty = this.dataset.specialty || '_________________';
+            const hospital = this.dataset.hospital || '';
+            const address = this.dataset.address || '';
+            
+            let text = `👤 ${patient}\n`;
+            text += `📅 ${date} • 🕐 ${hour}\n`;
+            text += `🔬 ${specialty}\n`;
+            if (hospital) text += `🏥 ${hospital}\n`;
+            if (address && address !== hospital) text += `📍 ${address}\n`;
+            
+            copyToClipboard(text);
+            this.textContent = '✅ Copiado!';
+            this.classList.add('copied');
+            setTimeout(() => {
+                this.textContent = '📋 Copiar';
+                this.classList.remove('copied');
+            }, 2000);
+        };
+    });
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ==================== COPY FUNCTIONS ====================
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('📋 Copiado para a área de transferência!', 'success');
+        }).catch(() => {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showToast('📋 Copiado para a área de transferência!', 'success');
+    } catch (e) {
+        showToast('❌ Erro ao copiar. Tente selecionar e copiar manualmente.', 'error');
+    }
+    document.body.removeChild(textarea);
+}
+
+// ==================== GENERATE FORMATTED TEXT (FIXED LINE BREAKS) ====================
+function generateFormattedText() {
+    const cards = state.filteredCards.length > 0 ? state.filteredCards : state.extractedCards;
+    const cardsWithData = cards.filter(c => c.pacient || c.date || c.speciality || c.hour || c.hospitalName);
+    
+    if (!cardsWithData.length) {
+        showToast('⚠️ Nenhum cartão com dados para exportar', 'warning');
+        return null;
+    }
+    
+    const total = cardsWithData.length;
+    const fileCount = state.files.length;
+    const layoutCount = state.layoutCount;
+    
+    // Group by date
+    const grouped = {};
+    cardsWithData.forEach(c => {
+        const key = c.date || 'Sem Data';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(c);
+    });
+    
+    const sortedDates = Object.keys(grouped).sort((a, b) => {
+        if (a === 'Sem Data') return 1;
+        if (b === 'Sem Data') return -1;
+        return parseDate(a) - parseDate(b);
+    });
+    
+    let lines = [];
+    const separator = '═'.repeat(70);
+    const subSeparator = '─'.repeat(60);
+    
+    lines.push(separator);
+    lines.push(`📋 RELATÓRIO DE AGENDAMENTOS - ${new Date().toLocaleDateString('pt-BR')}`);
+    lines.push(`📄 ${fileCount} PDF(s) processados • ${total} agendamento${total > 1 ? 's' : ''} extraído${total > 1 ? 's' : ''}`);
+    lines.push(`📐 ${layoutCount} cartão(ões) por página`);
+    if (state.searchQuery) {
+        lines.push(`🔍 Filtrado por: "${state.searchQuery}"`);
+    }
+    lines.push(separator);
+    lines.push('');
+    
+    let count = 1;
+    for (const date of sortedDates) {
+        const dayCards = grouped[date];
+        lines.push(`📅 ${date} (${dayCards.length} agendamento${dayCards.length > 1 ? 's' : ''})`);
+        lines.push(subSeparator);
+        
+        dayCards.sort((a, b) => (a.hour || '00:00').localeCompare(b.hour || '00:00'));
+        
+        for (const card of dayCards) {
+            const patient = card.pacient || '_________________';
+            const hour = card.hour || '__:__';
+            const specialty = card.speciality || '_________________';
+            const hospital = card.hospitalName || '';
+            const address = card.hospitalAddress || '';
+            const cardPos = card._cardIndex || '?';
+            
+            lines.push(`${count}. ${patient}`);
+            lines.push(`   🕐 ${hour}  |  🔬 ${specialty}`);
+            if (hospital) lines.push(`   🏥 ${hospital}`);
+            if (address && address !== hospital) lines.push(`   📍 ${address}`);
+            lines.push(`   📄 Posição: #${cardPos} de ${layoutCount} • Fonte: ${card._source || 'PDF'}`);
+            count++;
+        }
+        lines.push('');
+    }
+    
+    lines.push(separator);
+    lines.push(`📊 TOTAL: ${total} agendamento${total > 1 ? 's' : ''}`);
+    lines.push(`📅 ${sortedDates.length} data(s) diferentes`);
+    lines.push(`🏥 ${new Set(cardsWithData.map(c => c.hospitalName).filter(Boolean)).size} hospital(is) distintos`);
+    lines.push(`👤 ${new Set(cardsWithData.map(c => c.pacient).filter(Boolean)).size} paciente(s) distintos`);
+    lines.push(`📐 Layout: ${layoutCount} cartão(ões) por página`);
+    lines.push(separator);
+    lines.push('');
+    lines.push(`📄 Gerado por PDF Reader Pro em ${new Date().toLocaleString('pt-BR')}`);
+    
+    // Join with \r\n for Windows compatibility and ensure proper line breaks
+    return lines.join('\r\n');
+}
+
+function parseDate(dateStr) {
+    if (!dateStr) return Infinity;
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return Infinity;
+    const [dd, mm, yyyy] = parts.map(Number);
+    if (isNaN(dd) || isNaN(mm) || isNaN(yyyy)) return Infinity;
+    return new Date(yyyy, mm - 1, dd).getTime();
+}
+
+// ==================== DOWNLOAD TXT (FIXED) ====================
+function downloadTxt() {
+    const text = generateFormattedText();
+    if (!text) return;
+    
+    // Create blob with proper line endings
+    const blob = new Blob([text], { 
+        type: 'text/plain;charset=utf-8' 
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agendamentos_${new Date().toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    
+    showToast('📥 Arquivo TXT baixado com sucesso!', 'success');
+}
+
+// ==================== COPY ALL ====================
+function copyAllFormatted() {
+    const text = generateFormattedText();
+    if (!text) return;
+    copyToClipboard(text);
+}
+
+// ==================== PREVIEW MODAL ====================
+function showPreview() {
+    const text = generateFormattedText();
+    if (!text) return;
+    previewText.textContent = text;
+    previewModal.classList.add('active');
+}
+
+function closeModal() {
+    previewModal.classList.remove('active');
+}
+
+// ==================== EVENT BINDINGS ====================
+processBtn.onclick = processPdfs;
+
+downloadBtn.onclick = downloadTxt;
+
+previewBtn.onclick = showPreview;
+
+copyAllBtn.onclick = copyAllFormatted;
+
+clearBtn.onclick = () => {
+    if (state.isProcessing) return;
+    if (state.extractedCards.length === 0 && state.files.length === 0) {
+        showToast('⚠️ Nada para limpar', 'warning');
+        return;
+    }
+    if (!confirm('Limpar todos os arquivos e resultados?')) return;
+    state.files = [];
+    state.extractedCards = [];
+    state.filteredCards = [];
+    state.searchQuery = '';
+    searchInput.value = '';
+    searchInfo.style.display = 'none';
+    renderFileList();
+    renderResults();
+    updateStats();
+    updateButtons();
+    progressContainer.classList.remove('active');
+    showToast('🧹 Tudo limpo!');
+};
+
+searchInput.addEventListener('input', applySearch);
+clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    applySearch();
+});
+
+modalClose.onclick = closeModal;
+modalCloseBtn.onclick = closeModal;
+modalDownloadBtn.onclick = () => {
+    downloadTxt();
+    closeModal();
+};
+modalCopyBtn.onclick = () => {
+    const text = previewText.textContent;
+    if (text) {
+        copyToClipboard(text);
+    }
+};
+
+previewModal.addEventListener('click', (e) => {
+    if (e.target === previewModal) closeModal();
+});
+
+// ==================== KEYBOARD SHORTCUTS ====================
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && previewModal.classList.contains('active')) {
+        closeModal();
+    }
+    if (e.ctrlKey && e.key === 'Enter' && !processBtn.disabled) {
+        processPdfs();
+    }
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+    }
+    if (e.ctrlKey && e.key === 'c' && !e.shiftKey && !e.metaKey) {
+        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+            if (state.extractedCards.length > 0) {
+                e.preventDefault();
+                copyAllFormatted();
+            }
+        }
+    }
+    if (e.ctrlKey && e.key === 'd') {
+        if (state.extractedCards.length > 0) {
+            e.preventDefault();
+            downloadTxt();
+        }
+    }
+});
+
+// ==================== INIT ====================
+updateStats();
+updateButtons();
+showToast('🚀 Pronto! Selecione quantos cartões por página e processe (Ctrl+Enter)', 'info');
+showToast('🔍 Busque por nome ou data (Ctrl+F) • 📋 Copie tudo (Ctrl+C) • 📥 Baixe TXT (Ctrl+D)', 'info');
+
+console.log('📄 PDF Reader Pro carregado!');
+console.log(`📚 ${state.files.length} arquivos, ${state.extractedCards.length} cartões`);
+console.log(`📐 Layout: ${state.layoutCount} cartões por página`);
+</script>
+</body>
+</html>
