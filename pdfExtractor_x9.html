@@ -1970,6 +1970,14 @@ function renderAppointments(dateKey) {
     
     if (dateKey !== null) {
         cardsWithData = cardsWithData.filter(c => formatDateKey(c.date) === dateKey);
+    } else {
+        // "Todos" is scoped to the currently visible month (matches calendar + date list)
+        cardsWithData = cardsWithData.filter(c => {
+            const key = formatDateKey(c.date);
+            if (!key) return false;
+            const parts = key.split('/').map(Number);
+            return (parts[1] - 1) === state.currentMonth && parts[2] === state.currentYear;
+        });
     }
     
     if (searchQuery) {
